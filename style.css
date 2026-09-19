@@ -1,0 +1,146 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+::selection { background: transparent; color: inherit; }
+:root {
+  --sky: #221436; --moon: #f3e3a6; --wood: #3a281c; --teal: #3c7d70;
+  --purple: #7a4a86; --lamp: #f0d48a; --ink: #f4eee0; --deep: #140c1c;
+  --blood: #c4453c; --panel: #241628;
+}
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  overflow: hidden; overscroll-behavior: none; position: fixed;
+  background: var(--deep); color: var(--ink);
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  touch-action: manipulation;
+}
+@supports (height: 100dvh) { html, body { height: 100dvh; } }
+
+#game-shell {
+  position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh;
+  display: flex; flex-direction: column; touch-action: none;
+}
+#game-stage { order: 1; position: relative; flex: 0 0 75%; height: 75%; min-height: 0; }
+#control-deck { order: 2; }
+#screen-wrap {
+  position: absolute; inset: 0; overflow: hidden; background: #120a18;
+}
+canvas {
+  position: absolute; inset: 0; display: block; width: 100%; height: 100%;
+  touch-action: none; z-index: 0;
+}
+#opv {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; background: transparent; z-index: 15;
+  pointer-events: none; opacity: 0; transition: opacity .12s linear;
+}
+#opv.is-on { opacity: 1; }
+#hud {
+  position: absolute; left: 0; right: 0; top: max(8px, env(safe-area-inset-top));
+  padding: 0 12px; display: flex; justify-content: space-between; align-items: center;
+  pointer-events: none; z-index: 3; color: var(--ink);
+}
+#hearts { font-size: 18px; letter-spacing: .12em; color: var(--blood); }
+#place {
+  font-size: 12px; letter-spacing: .12em;
+  background: rgba(20,12,28,.55); padding: 4px 10px; border-radius: 4px;
+}
+
+#box {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 5;
+  background: rgba(18,10,28,.88); border: 1px solid #6a4a38;
+  padding: 10px 12px 8px; min-height: 92px; pointer-events: auto;
+}
+#who { font-size: 12px; color: var(--lamp); letter-spacing: .14em; min-height: 1.2em; }
+#line { font-size: 15px; line-height: 1.7; margin-top: 4px; white-space: pre-wrap; }
+#hint { font-size: 11px; color: #9a8a78; text-align: right; margin-top: 4px; }
+
+#choices {
+  position: absolute; left: 12px; right: 12px; bottom: 112px; z-index: 6;
+  display: flex; flex-direction: column; gap: 8px;
+}
+#choices .game-btn {
+  width: 100%; min-height: 48px; background: var(--lamp); color: var(--deep);
+  border: 0; text-align: center; font-weight: 700;
+}
+
+.screen {
+  position: absolute; inset: 0; z-index: 12; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end; text-align: center;
+  padding: 16px 16px 18px; color: var(--ink);
+  background: linear-gradient(180deg, transparent 28%, rgba(12,8,18,.82) 70%);
+  pointer-events: none;
+}
+.screen p { max-width: 28em; line-height: 1.7; font-size: 13px; margin: 0; }
+.screen h1 { font-size: clamp(22px, 6vw, 32px); letter-spacing: .18em; color: var(--moon); margin: 0 0 8px; }
+.how { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; text-align: left; margin-top: 10px; font-size: 12px; }
+.how b { color: var(--lamp); }
+#best { margin-top: 8px; font-size: 12px; opacity: .85; }
+.hidden { display: none !important; }
+
+.game-btn {
+  min-width: 48px; min-height: 48px; border: 0; border-radius: 10px;
+  cursor: pointer; font: inherit; font-weight: 700;
+  transition: transform .08s ease, opacity .08s ease;
+  touch-action: manipulation; color: var(--deep); background: var(--lamp);
+}
+.game-btn:active, .game-btn.is-pressed { transform: scale(0.92); opacity: .88; }
+.game-btn:focus-visible { outline: 3px solid var(--moon); outline-offset: 3px; }
+.game-btn:disabled { opacity: .35; pointer-events: none; }
+
+#control-deck {
+  flex: 0 0 25%; height: 25%; min-height: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  padding: 8px max(8px, env(safe-area-inset-right, 8px))
+          max(8px, env(safe-area-inset-bottom, 8px))
+          max(8px, env(safe-area-inset-left, 8px));
+  background: linear-gradient(180deg, #2a1c24, #140c14);
+  border-top: 1px solid #6a4a38;
+  z-index: 8; touch-action: none; overflow: hidden;
+}
+.dpad {
+  position: relative; width: min(28vw, 112px); height: min(28vw, 112px); flex-shrink: 0;
+  touch-action: none;
+  background:
+    linear-gradient(#3a2a28, #201418) 50% 0/34% 100% no-repeat,
+    linear-gradient(#3a2a28, #201418) 0 50%/100% 34% no-repeat;
+  border-radius: 14px; box-shadow: inset 0 0 0 1px #6a4a38;
+}
+.dpad .arr {
+  position: absolute; color: var(--ink); font-size: 14px; opacity: .7;
+  pointer-events: none; transition: opacity .08s, color .08s;
+}
+.dpad .arr.u { top: 6%; left: 50%; transform: translateX(-50%); }
+.dpad .arr.d { bottom: 6%; left: 50%; transform: translateX(-50%); }
+.dpad .arr.l { left: 9%; top: 50%; transform: translateY(-50%); }
+.dpad .arr.r { right: 9%; top: 50%; transform: translateY(-50%); }
+.dpad.press-u .arr.u, .dpad.press-d .arr.d, .dpad.press-l .arr.l, .dpad.press-r .arr.r {
+  opacity: 1; color: var(--lamp);
+}
+.dpad-nub {
+  position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; border-radius: 50%;
+  background: #2a1c1c; transform: translate(-50%,-50%); pointer-events: none;
+  border: 1px solid #6a4a38;
+}
+#control-deck .act { flex: 1.2; min-height: 56px; background: var(--blood); color: var(--ink); }
+#control-deck .jump { flex: .9; min-height: 56px; background: var(--teal); color: var(--ink); }
+#control-deck .sys { display: flex; flex-direction: column; gap: 6px; }
+#control-deck .sys .game-btn { min-width: 48px; min-height: 48px; background: #3a2a38; color: var(--ink); font-size: 14px; }
+
+@media (max-height: 640px) {
+  .dpad { width: 88px; height: 88px; }
+}
+
+#pauseDlg {
+  border: 0; border-radius: 16px; background: #241628; color: var(--ink);
+  padding: 22px 20px; max-width: 320px; width: calc(100% - 40px);
+}
+#pauseDlg::backdrop { background: rgba(8,4,12,.72); }
+#pauseDlg h2 { margin: 0 0 14px; text-align: center; color: var(--moon); letter-spacing: .2em; }
+#pauseDlg .col { display: flex; flex-direction: column; gap: 10px; }
+#pauseDlg .game-btn { width: 100%; }

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1028">
+<meta name="description" content="夜の宿に招かれ、おもてなしの正体を斬る。">
+<title>248｜塩見の館</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-shell">
+  <footer id="control-deck" aria-label="操作盤">
+    <div class="dpad" id="dpad" aria-label="十字キー">
+      <span class="arr u">▲</span>
+      <span class="arr l">◀</span>
+      <span class="arr r">▶</span>
+      <span class="arr d">▼</span>
+      <span class="dpad-nub"></span>
+    </div>
+    <button type="button" class="game-btn act" id="btnAct" aria-label="次へまたは斬">はじめる</button>
+    <button type="button" class="game-btn jump" id="btnJump" aria-label="跳ぶ">跳</button>
+    <div class="sys">
+      <button type="button" class="game-btn" id="btnMute" aria-label="音の切り替え">♪</button>
+      <button type="button" class="game-btn" id="btnPause" aria-label="一時停止">Ⅱ</button>
+    </div>
+  </footer>
+  <div id="game-stage">
+    <div id="screen-wrap">
+      <canvas id="c" aria-label="塩見の館"></canvas>
+      <video id="opv" playsinline webkit-playsinline preload="none" class="hidden" aria-hidden="true"></video>
+      <div id="hud" class="hidden">
+        <div id="hearts" aria-label="体力"></div>
+        <div id="place">塩見の館</div>
+      </div>
+      <div id="box" class="hidden" aria-live="polite">
+        <div id="who"></div>
+        <div id="line"></div>
+        <div id="hint">次へ</div>
+      </div>
+      <div id="choices" class="hidden">
+        <button type="button" class="game-btn" id="c0">茶を受ける</button>
+        <button type="button" class="game-btn" id="c1">断る</button>
+      </div>
+      <div id="title" class="screen">
+        <p>夜の宿に招かれ、おもてなしの正体を斬る。</p>
+        <div class="how">
+          <b>次へ／斬</b><span>会話送り、攻撃</span>
+          <b>跳・十字</b><span>移動とジャンプ</span>
+        </div>
+        <div id="best"></div>
+      </div>
+      <div id="over" class="screen hidden">
+        <h1>おもてなしは、終わらない</h1>
+        <p>塩見の館は、お客様を帰さない。</p>
+      </div>
+      <div id="clear" class="screen hidden">
+        <h1>おもてなしは、終わった</h1>
+        <p id="clearMsg"></p>
+      </div>
+    </div>
+  </div>
+</div>
+<dialog id="pauseDlg" aria-labelledby="pauseTitle">
+  <h2 id="pauseTitle">一時停止</h2>
+  <div class="col">
+    <button type="button" class="game-btn" id="btnResume">再開</button>
+    <button type="button" class="game-btn" id="btnMuteDlg">音の切り替え</button>
+    <button type="button" class="game-btn" id="btnQuit">タイトルへ</button>
+  </div>
+</dialog>
+<script src="script.js"></script>
+</body>
+</html>
