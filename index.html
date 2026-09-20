@@ -36,10 +36,11 @@
   <div id="game-stage">
     <div id="screen-wrap">
       <canvas id="c" aria-label="塩見の館"></canvas>
-      <video id="opv" playsinline webkit-playsinline preload="none" class="hidden" aria-hidden="true"></video>
+      <video id="opv" src="opening.mp4" poster="images/title.webp" muted playsinline webkit-playsinline preload="auto" class="hidden" aria-hidden="true"></video>
       <div id="hud" class="hidden">
         <div id="hearts" aria-label="体力"></div>
         <div id="place">塩見の館</div>
+        <div id="stat" aria-label="強さ"></div>
       </div>
       <div id="box" class="hidden" aria-live="polite">
         <div id="who"></div>
@@ -50,10 +51,10 @@
         <button type="button" class="game-btn" id="c0">茶を受ける</button>
         <button type="button" class="game-btn" id="c1">断る</button>
       </div>
-      <div id="title" class="screen">
+      <div id="title" class="screen pre">
         <p>夜の宿に招かれ、おもてなしの正体を斬る。</p>
         <div class="how">
-          <b>次へ／斬</b><span>会話送り、攻撃</span>
+          <b>次へ／斬</b><span>会話送り、攻撃、拾う</span>
           <b>跳・十字</b><span>移動とジャンプ</span>
         </div>
         <div id="best"></div>
@@ -77,6 +78,7 @@
     <button type="button" class="game-btn" id="btnQuit">タイトルへ</button>
   </div>
 </dialog>
-<script src="script.js"></script>
+  <audio id="bgm" src="audio/inn.m4a" loop preload="auto" playsinline></audio>
+  <script src="script.js"></script>
 </body>
 </html>

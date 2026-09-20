@@ -37,28 +37,46 @@ canvas {
 #opv {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; background: transparent; z-index: 15;
-  pointer-events: none; opacity: 0; transition: opacity .12s linear;
+  pointer-events: none; opacity: 0; transition: opacity .28s ease;
 }
 #opv.is-on { opacity: 1; }
 #hud {
   position: absolute; left: 0; right: 0; top: max(8px, env(safe-area-inset-top));
-  padding: 0 12px; display: flex; justify-content: space-between; align-items: center;
+  padding: 0 12px; display: flex; justify-content: center; align-items: center;
   pointer-events: none; z-index: 3; color: var(--ink);
 }
-#hearts { font-size: 18px; letter-spacing: .12em; color: var(--blood); }
+#hearts {
+  position: absolute; left: 12px; top: 0;
+  font-size: 18px; letter-spacing: .12em; color: var(--blood); text-shadow: 0 1px 0 #1a1010;
+}
 #place {
-  font-size: 12px; letter-spacing: .12em;
-  background: rgba(20,12,28,.55); padding: 4px 10px; border-radius: 4px;
+  font-size: 12px; letter-spacing: .18em;
+  background: rgba(28,18,14,.82); padding: 5px 12px; border-radius: 2px;
+  border: 2px solid #c4a070; box-shadow: 0 2px 8px rgba(0,0,0,.45), inset 0 0 0 1px #f0d48a;
+}
+#stat {
+  position: absolute; right: 12px; top: 0;
+  font-size: 11px; letter-spacing: .06em; line-height: 1.45;
+  background: rgba(28,18,14,.82); padding: 5px 8px; border-radius: 2px;
+  border: 2px solid #c4a070; box-shadow: 0 2px 8px rgba(0,0,0,.45), inset 0 0 0 1px #f0d48a;
+  text-align: right; max-width: 46%; white-space: pre-line;
 }
 
 #box {
   position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 5;
-  background: rgba(18,10,28,.88); border: 1px solid #6a4a38;
-  padding: 10px 12px 8px; min-height: 92px; pointer-events: auto;
+  background: linear-gradient(180deg, rgba(58,40,28,.96), rgba(22,14,10,.97));
+  border: 3px solid #c4a070; border-radius: 4px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.55), inset 0 0 0 1px #f0d48a;
+  padding: 12px 14px 10px; min-height: 96px; pointer-events: auto;
 }
-#who { font-size: 12px; color: var(--lamp); letter-spacing: .14em; min-height: 1.2em; }
-#line { font-size: 15px; line-height: 1.7; margin-top: 4px; white-space: pre-wrap; }
-#hint { font-size: 11px; color: #9a8a78; text-align: right; margin-top: 4px; }
+#who {
+  display: inline-block; font-size: 12px; color: var(--moon); letter-spacing: .16em; min-height: 1.2em;
+  background: #3a2418; border: 2px solid #e8d090; border-radius: 2px;
+  padding: 2px 12px; margin-bottom: 2px;
+}
+#who:empty { display: none; }
+#line { font-size: 15px; line-height: 1.7; margin-top: 6px; white-space: pre-wrap; }
+#hint { font-size: 11px; color: var(--lamp); text-align: right; margin-top: 4px; }
 
 #choices {
   position: absolute; left: 12px; right: 12px; bottom: 112px; z-index: 6;
@@ -66,7 +84,7 @@ canvas {
 }
 #choices .game-btn {
   width: 100%; min-height: 48px; background: var(--lamp); color: var(--deep);
-  border: 0; text-align: center; font-weight: 700;
+  border: 2px solid #c4a070; text-align: center; font-weight: 700; border-radius: 4px;
 }
 
 .screen {
@@ -81,7 +99,9 @@ canvas {
 .how { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; text-align: left; margin-top: 10px; font-size: 12px; }
 .how b { color: var(--lamp); }
 #best { margin-top: 8px; font-size: 12px; opacity: .85; }
-.hidden { display: none !important; }
+/* boot（OP前）は導入文だけ。操作説明とベストはOP後のタイトルで見せる＝同じ画面が2回出た印象を消す */
+#title.pre .how, #title.pre #best { display: none; }
+#bgm { display: none; }
 
 .game-btn {
   min-width: 48px; min-height: 48px; border: 0; border-radius: 10px;
@@ -99,8 +119,11 @@ canvas {
   padding: 8px max(8px, env(safe-area-inset-right, 8px))
           max(8px, env(safe-area-inset-bottom, 8px))
           max(8px, env(safe-area-inset-left, 8px));
-  background: linear-gradient(180deg, #2a1c24, #140c14);
-  border-top: 1px solid #6a4a38;
+  background:
+    linear-gradient(180deg, rgba(42,24,20,.2), rgba(10,6,10,.55)),
+    repeating-linear-gradient(90deg, #2a1c18 0 14px, #241614 14px 28px);
+  border-top: 2px solid #8a6a48;
+  box-shadow: inset 0 1px 0 #c4a070;
   z-index: 8; touch-action: none; overflow: hidden;
 }
 .dpad {

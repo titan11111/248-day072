@@ -1,11 +1,11 @@
 # 塩見の館 — 仕様
 
 ## 0. ドキュメント情報
-- 対象ゲーム: 248-day072
+- 対象ゲーム: 248-shiomi-no-yakata（GitHubリポジトリ名・公開URLは `248-day072` のまま。2026-09-21改名時に旧URL維持を選択）
 - 作成日: 2026-09-19
-- 更新日: 2026-09-19
+- 更新日: 2026-09-20
 - ステータス: 実装済み
-- 参照ファイル: index.html / style.css / script.js / opening.mp4 / images/title.webp
+- 参照ファイル: index.html / style.css / script.js / opening.mp4 / images/
 
 ## 1. ゲーム概要
 - ジャンル: 部屋送りアクション（会話→移動→斬撃）
@@ -13,6 +13,7 @@
 - 想定プレイ時間: 5〜8分
 - 想定プレイヤー: iPhone縦持ち。100日チャレンジ Day072
 - クリア体験の要点: 女将の歓迎から提灯お化け、中庭、正体までを一続きで斬り抜ける
+- 戦闘カメラ: 廊下／中庭の背景は屋根や空ではなく床・縁側が見える範囲を寄って描く。キャラはその床に立たせる
 
 ## 2. 対象環境
 
@@ -38,12 +39,15 @@
 
 ## 4. コアループ
 - 聞く → 走る → 斬る、を部屋単位で繰り返す
-- ハート3。0でその部屋から再戦
+- ハートは装備で 3〜4。0でその部屋から再戦（レベルと装備は残る）
 - 帳場で茶を受ける／断る。断ると提灯が1体増える
+- 経験値で Lv1〜5。レベルと武器で斬れ味が上がる
+- 稀に金提灯（経験値90）。祠の塩札は経験値100が付く
+- 拾い場: 押入れ（館の羽織）→ 武具の間（仕込み刀）→ 祠（塩札）
 
 ## 5. 画面 / 状態遷移
 - boot（はじめる）→ op（opening.mp4、0.4秒後スキップ可）→ title → talk／play → over または clear
-- 部屋: 帳場 → 客間 → 廊下 → 中庭 → 正体
+- 部屋: 帳場 → 客間 → 押入れ → 武具の間 → 廊下 → 祠 → 中庭 → 正体
 
 ## 6. 勝敗
 - クリア: 正体の女将を倒す
@@ -51,19 +55,34 @@
 - スコア: クリア時の残りハートをベストとして保存
 
 ## 7. 音声
-- 開始タップで AudioContext。失敗してもゲームは止めない
-- OP中はBGMを止める。終了後に矩形＋三角＋ノイズの3声ループ
+- 開始タップで AudioContext と BGM要素をunlock。失敗してもゲームは止めない
+- OP中はBGMを止める。終了後に `audio/inn.m4a` をループ（読めないときだけ矩形＋三角＋ノイズ）
 - SE: 斬・被弾・選択・クリア。ミュート時は無音
 - `visibilitychange` でポーズ＋BGM停止
 
 ## 8. ファイル構成
 ```
-248-day072/
+248-shiomi-no-yakata/
   index.html
   style.css
   script.js
   opening.mp4
-  images/title.webp
+  audio/inn.m4a
+  images/
+    title.webp
+    bg-desk.webp
+    bg-guest.webp
+    bg-hall.webp
+    bg-yard.webp
+    spr-hero.webp
+    spr-hero-slash.webp
+    spr-hero-front.webp
+    spr-okami.webp
+    spr-okami-front.webp
+    spr-okami-red.webp
+    spr-lantern.webp
+    port-hero.webp
+    port-okami.webp
   SPEC.md
   LEARNINGS.md
 ```
