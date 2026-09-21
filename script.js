@@ -1,7 +1,7 @@
 (()=>{
 const $=id=>document.getElementById(id);
 const cv=$('c'),cx=cv.getContext('2d'),stage=$('screen-wrap'),opv=$('opv');
-let W=0,H=0,DPR=1,paused=false,mute=false,AC=null,bgmOn=false,beatT=0,beat=0,chipOn=false;
+let W=0,H=0,DPR=1,paused=false,mute=false,AC=null,bgmOn=false,beatT=0,beat=0,chipOn=false,opGuard=0;
 const bgmEl=$('bgm');
 if(bgmEl){bgmEl.loop=true;bgmEl.preload='auto';bgmEl.volume=0.4;}
 const K={l:0,r:0,u:0,d:0};
@@ -368,19 +368,21 @@ function beginOp(){
   const started=opv.play();
   if(started&&typeof started.catch==='function')started.catch(endOp);
   opv.addEventListener('error',endOp,{once:true});
+  // Safari等で ended / error が通知されない場合も、動画尺を越えたら必ずゲームへ進む。
+  clearTimeout(opGuard);
+  opGuard=setTimeout(endOp,13000);
   syncPad();
 }
 function endOp(){
   // ended / error / play()のreject / スキップ の4経路から呼ばれるため冪等にする
   if(!G||G.opDone)return;
   G.opDone=true;
+  clearTimeout(opGuard);opGuard=0;
   try{opv.pause();}catch(e){}
-  // 先にタイトルを敷いてから動画をフェードで退かせる＝黒画面を挟まないクロスフェード
-  G.mode='title';
-  $('title').classList.remove('hidden','pre');showBest();startBgm();syncPad();
+  // ゲームの最初の場面を先に敷き、動画を退かせる。二度目のタップは不要。
+  startAdventure();
   opv.classList.remove('is-on');
   setTimeout(()=>{
-    if(!G||G.mode!=='title')return;
     opv.classList.add('hidden');
     try{opv.currentTime=0;}catch(e){}
   },300);
@@ -391,6 +393,7 @@ function startAdventure(){
   enterRoom(0,false);
 }
 function toBoot(){
+  clearTimeout(opGuard);opGuard=0;
   try{opv.pause();}catch(e){}
   opv.classList.add('hidden');hideTalk();
   $('hud').classList.add('hidden');$('over').classList.add('hidden');$('clear').classList.add('hidden');
