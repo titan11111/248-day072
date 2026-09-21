@@ -2,6 +2,9 @@
 const $=id=>document.getElementById(id);
 const cv=$('c'),cx=cv.getContext('2d'),stage=$('screen-wrap'),opv=$('opv');
 let W=0,H=0,DPR=1,paused=false,mute=false,AC=null,bgmOn=false,beatT=0,beat=0,chipOn=false,opGuard=0;
+// オープニング動画は1ページ読み込みにつき1回だけ。再生済みになったら二度と鳴らさない。
+let opUsed=false;
+if(opv){opv.loop=false;opv.removeAttribute('loop');}
 const bgmEl=$('bgm');
 if(bgmEl){bgmEl.loop=true;bgmEl.preload='auto';bgmEl.volume=0.4;}
 const K={l:0,r:0,u:0,d:0};
@@ -358,10 +361,12 @@ function slash(){
 
 function beginOp(){
   unlock();
+  // 2周目以降は動画を出さない（繰り返し再生・音の鳴り直しを根絶する）
+  if(opUsed){G.opDone=true;startAdventure();return;}
   G.mode='op';G.skipAt=performance.now()+400;G.opDone=false;
   // タイトルはここで消さない。opvがz-index上で覆うので、最初のフレームが出た時点で消す（timeupdate）
   $('over').classList.add('hidden');$('clear').classList.add('hidden');
-  stopBgm();opv.classList.remove('hidden','is-on');opv.muted=true;
+  stopBgm();opv.classList.remove('hidden','is-on');opv.muted=true;opv.loop=false;
   try{opv.currentTime=0;}catch(e){}
   // iOS Safariでは、ユーザー操作中にplay()を呼ばないと再生許可が失われる。
   // 読込完了イベントを待たず、この「はじめる」操作の中で開始する。
@@ -376,15 +381,18 @@ function beginOp(){
 function endOp(){
   // ended / error / play()のreject / スキップ の4経路から呼ばれるため冪等にする
   if(!G||G.opDone)return;
-  G.opDone=true;
+  G.opDone=true;opUsed=true;
   clearTimeout(opGuard);opGuard=0;
-  try{opv.pause();}catch(e){}
+  // 止める順番が重要: 先に消音 → 停止 → srcを外す。
+  // pause()だけだと iOS Safari が裏で再生を再開して音が鳴り続けることがある。
+  try{opv.muted=true;opv.pause();}catch(e){}
   // ゲームの最初の場面を先に敷き、動画を退かせる。二度目のタップは不要。
   startAdventure();
   opv.classList.remove('is-on');
   setTimeout(()=>{
     opv.classList.add('hidden');
-    try{opv.currentTime=0;}catch(e){}
+    // 動画本体を捨てる。以降どこから play() が呼ばれても音も映像も出ない。
+    try{opv.pause();opv.removeAttribute('src');opv.load();}catch(e){}
   },300);
 }
 function startAdventure(){
@@ -801,6 +809,11 @@ bindTap($('btnQuit'),()=>{setPaused(false);toBoot();});
 bindTap($('c0'),()=>pickTea(true));
 bindTap($('c1'),()=>pickTea(false));
 opv.addEventListener('ended',endOp);
+// 保険: 再生済みフラグが立った後に play が発火したら、その場で握り潰す。
+opv.addEventListener('play',()=>{
+  if(!opUsed)return;
+  try{opv.muted=true;opv.pause();}catch(e){}
+});
 opv.addEventListener('timeupdate',()=>{
   if(!G||G.mode!=='op')return;
   if(opv.currentTime>0.03){opv.classList.add('is-on');$('title').classList.add('hidden');if(!mute)opv.muted=false;}

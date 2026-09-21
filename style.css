@@ -7,6 +7,7 @@
   -webkit-user-drag: none;
 }
 ::selection { background: transparent; color: inherit; }
+.hidden { display: none !important; }
 :root {
   --sky: #221436; --moon: #f3e3a6; --wood: #3a281c; --teal: #3c7d70;
   --purple: #7a4a86; --lamp: #f0d48a; --ink: #f4eee0; --deep: #140c1c;
