@@ -46,6 +46,9 @@ function gy(){
   const bg=G&&G.room&&G.room.bg;
   if(bg==='hall')return H*0.87;
   if(bg==='yard')return H*0.85;
+  if(bg==='road')return H*0.88;
+  if(bg==='woods')return H*0.86;
+  if(bg==='port')return H*0.86;
   return H*0.80;
 }
 function S(){return Math.max(1.5, Math.min(W/360,H/640)*2.05);}
@@ -220,43 +223,8 @@ function grantExp(n,x,y,rare){
   }
 }
 
-const ROOMS=[
-  {id:'desk',kind:'talk',place:'帳場',bg:'desk',lines:[
-    {w:'女将',t:'塩見の館へようこそ。'},
-    {w:'女将',t:'遠いところを、ようおいでくださいました。'},
-    {w:'剣士',t:'……人が、おらんようだが。'},
-    {w:'女将',t:'今夜は月が欠けておりますゆえ。お茶をどうぞ。'}
-  ],choice:true,next:1},
-  {id:'guest',kind:'talk',place:'客間',bg:'guest',lines:[
-    {w:'剣士',t:'帳場に戻ると、女将の姿がない。'},
-    {w:'剣士',t:'茶の湯気が、まだ残っている。'},
-    {w:'剣士',t:'奥の押入れが、半開きだ。'}
-  ],next:2},
-  {id:'closet',kind:'loot',place:'押入れ',bg:'guest',loot:{kind:'armor',id:'haori',name:'館の羽織',shape:'chest'},next:3},
-  {id:'armory',kind:'loot',place:'武具の間',bg:'hall',loot:{kind:'weapon',id:'shikomi',name:'仕込み刀',shape:'rack'},next:4},
-  {id:'hall',kind:'play',place:'廊下',bg:'hall',next:5},
-  {id:'afterHall',kind:'talk',place:'廊下',bg:'hall',lines:[
-    {w:'剣士',t:'提灯が、笑っていた。'},
-    {w:'剣士',t:'中庭の祠から、塩の匂いがする。'}
-  ],next:6},
-  {id:'shrine',kind:'loot',place:'祠',bg:'yard',loot:{kind:'armor',id:'fuda',name:'塩札',shape:'shrine',bonusExp:100},next:7},
-  {id:'yard',kind:'play',place:'中庭',bg:'yard',next:8},
-  {id:'afterYard',kind:'talk',place:'中庭',bg:'yard',lines:[
-    {w:'女将',t:'お客様を、帰すわけにはまいりません。'},
-    {w:'女将',t:'おもてなしは、これからが本番。'}
-  ],next:9},
-  {id:'true',kind:'play',place:'正体',bg:'yard',next:10},
-  {id:'awake',kind:'talk',place:'正体',bg:'yard',salt:1,lines:[
-    {w:'剣士',t:'……終わった、か。'},
-    {w:'女将',t:'いいえ。わたくしは、戸口に立っていただけ。'},
-    {w:'女将',t:'開けてしまわれましたね。'},
-    {w:'剣士',t:'障子の向こうで、海が鳴った。潮の音が、逆さに聞こえる。'},
-    {w:'剣士',t:'館が、ゆっくりと目を開けた。'},
-    {w:'剣士',t:'女将の消えたあとに、塩がひとつまみ残っていた。'},
-    {w:'???',t:'四つ。四つ集めて、舳先から撒け。'},
-    {w:'剣士',t:'誰の声かは、わからなかった。'}
-  ],next:11}
-];
+/* 部屋データは rooms.js（index.html で script.js より先に読み込む） */
+const ROOMS=window.SHIOMI_ROOMS||[];
 
 let G=null;
 function freshPlayer(){
@@ -268,7 +236,7 @@ function okami(x,y,red){return {type:red?'red':'okami',x,y,hp:red?8:4,max:red?8:
 
 function enterRoom(i,keepHearts){
   const room=ROOMS[i];
-  G.ri=i;G.room=room;G.line=0;G.choosing=false;G.fx=[];G.en=[];G.t=0;G.shake=0;G.flash=0;G.hitstop=0;
+  G.ri=i;G.room=room;G.line=0;G.choosing=false;G.branch=null;G.fx=[];G.en=[];G.t=0;G.shake=0;G.flash=0;G.hitstop=0;
   G.p=freshPlayer();G.item=null;
   if(!keepHearts)G.hearts=maxHp();
   $('place').textContent=room.place;
@@ -291,6 +259,18 @@ function enterRoom(i,keepHearts){
       G.en.push(lan(W*0.48,g-ch*0.70,Math.random()<0.22),okami(W*0.78,g,false));
     }else if(room.id==='true'){
       G.en.push(okami(W*0.74,g,true));
+    }else if(room.id==='beach'){
+      G.en.push(lan(W*0.52,g-ch*0.50,Math.random()<0.24),lan(W*0.76,g-ch*0.72,false),lan(W*0.92,g-ch*0.38,false));
+    }else if(room.id==='woods'){
+      G.en.push(okami(W*0.76,g,false),lan(W*0.56,g-ch*0.66,Math.random()<0.30));
+    }else if(room.id==='beaconFight'){
+      G.en.push(okami(W*0.78,g,false),lan(W*0.50,g-ch*0.74,Math.random()<0.35));
+    }else if(room.id==='cliffRun'){
+      G.en.push(lan(W*0.60,g-ch*0.46,false),lan(W*0.86,g-ch*0.68,Math.random()<0.18));
+    }else if(room.id==='wharf'){
+      G.en.push(lan(W*0.50,g-ch*0.60,Math.random()<0.26),lan(W*0.88,g-ch*0.40,false),okami(W*0.72,g,false));
+    }else if(room.id==='portBoss'){
+      const b=okami(W*0.76,g,true);b.hp=b.max=11;b.exp=120;G.en.push(b);
     }
     startBgm();
   }
@@ -302,7 +282,7 @@ function showLine(){
   $('box').classList.remove('hidden');$('choices').classList.add('hidden');G.choosing=false;
   $('who').textContent=L.w||'';$('line').textContent=L.t;$('hint').textContent='次へ';
 }
-function hideTalk(){$('box').classList.add('hidden');$('choices').classList.add('hidden');G.choosing=false;}
+function hideTalk(){$('box').classList.add('hidden');$('choices').classList.add('hidden');G.choosing=false;G.branch=null;}
 function goNext(){
   const n=G.room.next;
   if(n===undefined||n===null||n>=ROOMS.length)win();
@@ -313,10 +293,12 @@ function advance(){
   G.line++;
   if(G.line>=G.room.lines.length){
     if(G.room.choice){
-      G.choosing=true;$('hint').textContent='選ぶ';
+      G.choosing=true;G.branch=null;$('hint').textContent='選ぶ';
+      $('c0').textContent='茶を受ける';$('c1').textContent='断る';
       $('choices').classList.remove('hidden');
       return;
     }
+    if(G.room.branch){showBranch();return;}
     goNext();
   }else showLine();
 }
@@ -328,6 +310,31 @@ function pickTea(drink){
   $('hint').textContent='次へ';
   G.room={...G.room,choice:false,lines:[{w:'女将',t:$('line').textContent}],next:1};
   G.line=0;
+}
+
+/* 分かれ道。#c0 / #c1 は茶の選択と共用するので、開くたびにラベルを入れ替える。
+   ボタンを増やさないのは、操作盤と同じく DOM の並びを検証器に対して安定させるため。 */
+function showBranch(){
+  const b=G.room.branch;
+  if(!b||!b.opts||b.opts.length<2){goNext();return;}
+  G.choosing=true;G.branch=b;
+  $('hint').textContent='選ぶ';
+  $('c0').textContent=b.opts[0].t;$('c1').textContent=b.opts[1].t;
+  $('choices').classList.remove('hidden');
+}
+function pickBranch(i){
+  if(!G||!G.choosing||!G.branch)return;
+  const o=G.branch.opts[i];
+  if(!o)return;
+  G.choosing=false;G.branch=null;$('choices').classList.add('hidden');sfx.ok();
+  const n=o.next;
+  if(n===undefined||n===null||n>=ROOMS.length)win();
+  else enterRoom(n,true);
+}
+function choose(i){
+  if(!G||!G.choosing)return;
+  if(G.branch)pickBranch(i);
+  else pickTea(i===0);
 }
 
 function nearLoot(){
@@ -401,7 +408,8 @@ function toBoot(){
   G={mode:'boot',hearts:3,hard:false,ri:0,fx:[],lv:1,exp:0,salt:0,weapon:'wakizashi',armor:'tabi'};showBest();syncPad();
 }
 function showBest(){
-  $('best').textContent=cleared?(`第一幕 突破　塩 ${saltBest}/4`+(best?`　ベスト残りハート ${best}`:'')):'';
+  const act=saltBest>=3?'第三幕':saltBest>=2?'第二幕':'第一幕';
+  $('best').textContent=cleared?(`${act} 突破　塩 ${saltBest}/4`+(best?`　ベスト残りハート ${best}`:'')):'';
 }
 function gameOver(){
   G.mode='over';hideTalk();sfx.lose();stopBgm();
@@ -414,6 +422,11 @@ function win(){
   cleared=true;try{localStorage.setItem('tg.248.cleared','1');}catch(e){}
   const sl=G.salt|0;
   if(sl>saltBest){saltBest=sl;try{localStorage.setItem('tg.248.salt',String(saltBest));}catch(e){}}
+  const ttl=$('clear').querySelector('h1'),sub=$('clear').querySelector('p');
+  if(ttl&&sub){
+    if(sl>=3){ttl.textContent='舫が切れた';sub.textContent='塩は三つ。残るはひとつ、海の上で撒く。';}
+    else{ttl.textContent='館が、目を覚ました';sub.textContent='戸口はもう開いている。島を夜から剥がして帰るには、塩が四つ要る。';}
+  }
   $('clearMsg').textContent=`塩 ${sl}/4　　Lv${G.lv}　${weapon().name}　残りハート ${left}`;
   $('clear').classList.remove('hidden');$('hud').classList.add('hidden');syncPad();
 }
@@ -589,19 +602,159 @@ function vignette(red){
   top.addColorStop(0,'rgba(8,4,12,.55)');top.addColorStop(1,'rgba(8,4,12,0)');
   cx.fillStyle=top;cx.fillRect(0,0,W,H*0.22);
 }
+/* ── ステージ2・3の背景は素材ではなくキャンバスに手描きする ──
+   館（1面）の背景は 540px 幅の webp 4枚。同じ作り方で島の外と港を足すと
+   素材が増えて 20MB 鉄則に近づくうえ、夜の海のような「動くもの」は静止画だと死ぬ。
+   ここは pix() と同じ描き方で、床線だけ gy() に合わせて描く。 */
+function nightSky(look){
+  const g=cx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0b0818');g.addColorStop(0.55,'#221436');g.addColorStop(1,'#3a2458');
+  cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  for(let i=0;i<40;i++){
+    const x=((i*137+13)%1000)/1000*W-look*6, y=((i*241+29)%1000)/1000*(H*0.42);
+    pix(x,y,i%5?1:2,i%5?1:2,i%3?'#d8c878':'#f3e3a6');
+  }
+  const mx=W*0.76-look*10,my=H*0.13,r=Math.max(10,H*0.034);
+  const gl=cx.createRadialGradient(mx,my,4,mx,my,r*5);
+  gl.addColorStop(0,'rgba(243,227,166,.42)');gl.addColorStop(1,'rgba(243,227,166,0)');
+  cx.fillStyle=gl;cx.fillRect((mx-r*5)|0,(my-r*5)|0,(r*10)|0,(r*10)|0);
+  cx.fillStyle=C.moon;cx.beginPath();cx.arc(mx,my,r,0,6.284);cx.fill();
+  cx.fillStyle='#17102a';cx.beginPath();cx.arc(mx+r*0.52,my-r*0.34,r*0.92,0,6.284);cx.fill();
+}
+/* 水平線 hz から画面下まで海。波頭は G.t で流すので静止画にはできない絵 */
+function seaTo(hz,look){
+  const g=cx.createLinearGradient(0,hz,0,H);
+  g.addColorStop(0,'#16223e');g.addColorStop(1,'#0a1020');
+  cx.fillStyle=g;cx.fillRect(0,hz|0,W,(H-hz)|0);
+  const t=(G&&G.t)||0;
+  for(let i=0;i<24;i++){
+    const ly=hz+i*i*0.9+4;
+    if(ly>H)break;
+    const w=20+((i*53)%60)+Math.sin(t*1.4+i)*10;
+    const x=((i*173+t*(8+i*1.5))%(W+140))-70-look*(2+i*0.3);
+    pix(x,ly,w,2,i%3?'rgba(200,220,255,.16)':'rgba(243,227,166,.20)');
+  }
+}
+function drawRoadBG(look){
+  nightSky(look);
+  const hz=H*0.44,gt=H*0.72;
+  seaTo(hz,look);
+  cx.fillStyle='#120c22';
+  for(let i=0;i<3;i++){
+    const bx=W*(0.14+i*0.34)-look*14,bw=W*0.32,bh=H*0.05+i*H*0.012;
+    cx.beginPath();cx.moveTo(bx-bw/2,hz);cx.lineTo(bx,hz-bh);cx.lineTo(bx+bw/2,hz);cx.closePath();cx.fill();
+  }
+  const g=cx.createLinearGradient(0,gt,0,H);
+  g.addColorStop(0,'#2a2030');g.addColorStop(1,'#141020');
+  cx.fillStyle=g;cx.fillRect(0,gt|0,W,(H-gt)|0);
+  pix(0,gt,W,3,'#4a3a48');
+  for(let i=0;i<30;i++)pix(((i*91+37)%W)-look*22,gt+6+((i*57)%Math.max(8,(H-gt)*0.5)),3,6,i%2?'#3c4a34':'#2c3828');
+  for(let i=0;i<4;i++){
+    const x=W*(0.08+i*0.30)-look*30,base=gt+8,th=H*0.10;
+    pix(x-2,base-th,5,th,'#161022');
+    for(let k=0;k<3;k++)pix(x-16+k*2,base-th-k*8,32-k*6,7,'#101a18');
+  }
+}
+function drawWoodsBG(look){
+  /* 林は「暗い」だけでは真っ黒に潰れる（初版がそうだった）。
+     奥を月明かりで明るく、手前の杉を黒い影として抜く三層で奥行きを作る。 */
+  const g=cx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#2a3a30');g.addColorStop(0.5,'#1a2a24');g.addColorStop(1,'#101a16');
+  cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  const gt=H*0.74;
+  /* 奥から差す月明かり */
+  const mg=cx.createRadialGradient(W*0.62-look*8,H*0.30,8,W*0.62-look*8,H*0.30,H*0.42);
+  mg.addColorStop(0,'rgba(210,240,220,.22)');mg.addColorStop(1,'rgba(210,240,220,0)');
+  cx.fillStyle=mg;cx.fillRect(0,0,W,H);
+  /* 光の筋 */
+  cx.fillStyle='rgba(215,245,225,.07)';
+  for(let i=0;i<5;i++)cx.fillRect((W*(0.05+i*0.20)-look*8)|0,0,(W*0.045)|0,(gt*0.98)|0);
+  /* 奥の杉（背景より暗い縦帯） */
+  for(let i=0;i<12;i++){
+    const x=((i*127+40)%W)-look*10,w=7+((i*13)%7);
+    pix(x,H*0.06,w,gt-H*0.06,'#16241d');
+    pix(x+w-2,H*0.06,2,gt-H*0.06,'#26382e');
+  }
+  /* 手前の杉（真っ黒の影。ここでコントラストを作る） */
+  for(let i=0;i<5;i++){
+    const x=W*(0.02+i*0.24)-look*34,w=16+((i*17)%12);
+    pix(x,0,w,gt+H*0.08,'#060b09');
+    pix(x+w,0,3,gt+H*0.08,'#1e2e26');
+    /* 枝。全部同じ高さに引くと竹の節のように見えるので、木ごとにずらす */
+    for(let k=0;k<4;k++){
+      const by=H*(0.08+k*0.17+(i%3)*0.035), side=(i+k)%2?1:-1;
+      pix(x+(side>0?w:-12),by,12,4,'#050908');
+      pix(x+(side>0?w+8:-16),by-5,6,3,'#050908');
+    }
+  }
+  const gg=cx.createLinearGradient(0,gt,0,H);
+  gg.addColorStop(0,'#33403a');gg.addColorStop(1,'#151d19');
+  cx.fillStyle=gg;cx.fillRect(0,gt|0,W,(H-gt)|0);
+  pix(0,gt,W,2,'#4a5a50');
+  for(let i=0;i<26;i++)pix(((i*83+21)%W)-look*20,gt+8+((i*41)%Math.max(8,(H-gt)*0.6)),4,2,i%2?'#5a4a2c':'#2c3a2a');
+  cx.fillStyle='rgba(190,225,205,.09)';cx.fillRect(0,(gt-H*0.07)|0,W,(H*0.11)|0);
+}
+function drawPortBG(look){
+  nightSky(look);
+  const hz=H*0.40,gt=H*0.70;
+  seaTo(hz,look);
+  for(let i=0;i<3;i++){
+    const bx=W*(0.18+i*0.30)-look*16,by=hz+H*0.04+i*H*0.02,bw=W*0.16-i*8;
+    cx.fillStyle='#0e1428';
+    cx.beginPath();cx.moveTo(bx-bw/2,by);cx.lineTo(bx+bw/2,by);cx.lineTo(bx+bw*0.34,by+8);cx.lineTo(bx-bw*0.34,by+8);cx.closePath();cx.fill();
+    pix(bx,by-H*0.06,2,H*0.06,'#0e1428');pix(bx+1,by-H*0.06,bw*0.28,H*0.03,'#151d33');
+  }
+  for(let i=0;i<3;i++){
+    const x=W*(0.02+i*0.36)-look*22,w=W*0.30,h=H*0.14;
+    pix(x,gt-h,w,h,'#1a1218');pix(x,gt-h,w,4,'#2c1e24');
+    for(let k=0;k<3;k++)pix(x+10+k*(w/3),gt-h+14,10,12,'#3a2a18');
+  }
+  const g=cx.createLinearGradient(0,gt,0,H);
+  g.addColorStop(0,'#3a2a20');g.addColorStop(1,'#1c1410');
+  cx.fillStyle=g;cx.fillRect(0,gt|0,W,(H-gt)|0);
+  pix(0,gt,W,3,'#5a422e');
+  for(let i=0;i<16;i++)pix(((i*47)%W)-look*26,gt+4,2,H-gt,'rgba(0,0,0,.25)');
+  for(let i=0;i<3;i++){const x=W*(0.16+i*0.34)-look*30;pix(x,gt-18,8,20,'#2a1c14');pix(x-2,gt-22,12,5,'#3c2a1e');}
+  for(let i=0;i<4;i++){
+    const x=W*(0.10+i*0.27)-look*12,y=H*0.16;
+    pix(x,0,1,y,'#241a1a');
+    const gl=cx.createRadialGradient(x,y+8,2,x,y+8,34);
+    gl.addColorStop(0,'rgba(255,200,110,.45)');gl.addColorStop(1,'rgba(255,160,40,0)');
+    cx.fillStyle=gl;cx.fillRect((x-34)|0,(y-26)|0,68,68);
+    pix(x-5,y,10,14,'#e8b45a');pix(x-5,y+4,10,2,'#a8541c');
+  }
+}
+/* 海しぶき。館の ash()（火の粉）の海版 */
+function spray(){
+  const t=G&&G.t||0;
+  for(let i=0;i<18;i++){
+    const x=(i*67+t*90)%W,y=(i*97+t*40)%H;
+    pix(x,y,2,2,i%2?'rgba(200,230,255,.45)':'rgba(20,40,70,.55)');
+  }
+}
+const PROC={road:drawRoadBG,woods:drawWoodsBG,port:drawPortBG};
+
 function drawBG(){
   const id=G.room&&G.room.id,bg=G.room&&G.room.bg;
-  const img=bg==='hall'?IMG.hall:bg==='yard'?IMG.yard:id==='guest'?IMG.guest:IMG.desk;
-  const view=BG_VIEW[bg]||null;
   const look=(G.mode==='play'&&G.p)?((G.p.x/W)-0.5)*1.4:0;
-  const stagePlay=G.mode==='play';
-  const ok=stagePlay&&view?paintStageBG(img,view,look):cover(img);
-  if(!ok)sky();
+  const proc=PROC[bg];
+  if(proc){
+    proc(look);
+  }else{
+    const img=bg==='hall'?IMG.hall:bg==='yard'?IMG.yard:id==='guest'?IMG.guest:IMG.desk;
+    const view=BG_VIEW[bg]||null;
+    const stagePlay=G.mode==='play';
+    const ok=stagePlay&&view?paintStageBG(img,view,look):cover(img);
+    if(!ok)sky();
+  }
   if(id==='true'){
     cx.fillStyle='rgba(88,4,16,.34)';cx.fillRect(0,0,W,H);
     ash();
+  }else if(id==='portBoss'){
+    cx.fillStyle='rgba(10,30,80,.30)';cx.fillRect(0,0,W,H);
+    spray();
   }
-  motes(G.mode==='play');vignette(id==='true');
+  motes(G.mode==='play');vignette(id==='true'||id==='portBoss');
 }
 function drawHero(p,front){
   if(!p)return;
@@ -644,9 +797,13 @@ function drawOkami(e,front,hMul){
   const img=front?IMG.okamiFront:(e.type==='red'?IMG.okamiRed:IMG.okami);
   const face=front?1:(e.face>0?-1:1);
   if(e.type==='red'){
+    /* 初版は矩形の塗りだった。館（正体）は画面全体が赤かったので隠れていたが、
+       港の青い場に同じ矩形を出すと「赤い箱」として見えた。円のにじみに変える（2026-09-22） */
     const pulse=22+Math.sin(G.t*6)*6;
-    cx.fillStyle='rgba(180,20,30,.22)';
-    cx.fillRect((e.x-h*0.4)|0,(e.y-h)|0,h*0.8,h);
+    const cxx=e.x, cyy=e.y-h*0.52, r=h*0.62;
+    const au=cx.createRadialGradient(cxx,cyy,r*0.15,cxx,cyy,r);
+    au.addColorStop(0,'rgba(200,30,40,.30)');au.addColorStop(1,'rgba(200,30,40,0)');
+    cx.fillStyle=au;cx.fillRect((cxx-r)|0,(cyy-r)|0,(r*2)|0,(r*2)|0);
     pix(e.x-2,e.y-h-pulse,4,pulse,'rgba(255,80,60,.45)');
   }
   if(!blit(img,e.x,e.y+Math.sin(G.t*2.2)*1.5,h,face,0.48,1)){
@@ -716,7 +873,7 @@ function drawBars(){
   const br=Math.max(0,boss.hp/boss.max);
   pix(rbx+4+(bw-8)*(1-br),by+4,(bw-8)*br,bh,C.blood);
   cx.fillStyle=C.lamp;cx.font=`${Math.max(10,H*0.018)|0}px "Hiragino Mincho ProN","Yu Mincho",serif`;
-  cx.fillText(boss.type==='red'?'正体':'女将',rbx+6,by+bh+20);
+  cx.fillText((G.room&&G.room.boss)||(boss.type==='red'?'正体':'女将'),rbx+6,by+bh+20);
 }
 function drawFx(){
   for(const f of G.fx){
@@ -750,7 +907,7 @@ function drawFx(){
 function drawTalk(){
   const indoor=G.room.bg==='desk'||G.room.bg==='guest';
   const speaker=((G.room.lines||[])[G.line]||{}).w;
-  const showOkami=G.room.id==='desk'||G.room.id==='afterYard';
+  const showOkami=!!G.room.okami;
   if(indoor){
     const y=H*0.98;
     const heroH=H*(speaker==='剣士'?0.58:0.48);
@@ -828,8 +985,8 @@ bindTap($('btnQuit'),()=>{paused=false;try{$('pauseDlg').close();}catch(e){}toBo
 /* Escape や端末側の操作でダイアログだけ閉じたときも、ポーズ状態を残さない */
 $('pauseDlg').addEventListener('close',()=>{if(paused)paused=false;});
 $('pauseDlg').addEventListener('cancel',e=>{e.preventDefault();setPaused(false);});
-bindTap($('c0'),()=>pickTea(true));
-bindTap($('c1'),()=>pickTea(false));
+bindTap($('c0'),()=>choose(0));
+bindTap($('c1'),()=>choose(1));
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault();try{cv.setPointerCapture(e.pointerId);}catch(err){}
   unlock();act();
