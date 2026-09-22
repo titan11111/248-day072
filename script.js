@@ -26,9 +26,9 @@ const IMG={
   portHero:loadImg('images/port-hero.webp'),
   portOkami:loadImg('images/port-okami.webp')
 };
-let best=0,cleared=false;
+let best=0,cleared=false,saltBest=0;
 try{mute=localStorage.getItem('tg.248.mute')==='1';}catch(e){}
-try{best=+localStorage.getItem('tg.248.best')||0;cleared=localStorage.getItem('tg.248.cleared')==='1';}catch(e){}
+try{best=+localStorage.getItem('tg.248.best')||0;cleared=localStorage.getItem('tg.248.cleared')==='1';saltBest=+localStorage.getItem('tg.248.salt')||0;}catch(e){}
 
 function resize(){
   const r=stage.getBoundingClientRect();DPR=Math.min(window.devicePixelRatio||1,2);
@@ -239,7 +239,17 @@ const ROOMS=[
     {w:'女将',t:'お客様を、帰すわけにはまいりません。'},
     {w:'女将',t:'おもてなしは、これからが本番。'}
   ],next:9},
-  {id:'true',kind:'play',place:'正体',bg:'yard',next:10}
+  {id:'true',kind:'play',place:'正体',bg:'yard',next:10},
+  {id:'awake',kind:'talk',place:'正体',bg:'yard',salt:1,lines:[
+    {w:'剣士',t:'……終わった、か。'},
+    {w:'女将',t:'いいえ。わたくしは、戸口に立っていただけ。'},
+    {w:'女将',t:'開けてしまわれましたね。'},
+    {w:'剣士',t:'障子の向こうで、海が鳴った。潮の音が、逆さに聞こえる。'},
+    {w:'剣士',t:'館が、ゆっくりと目を開けた。'},
+    {w:'剣士',t:'女将の消えたあとに、塩がひとつまみ残っていた。'},
+    {w:'???',t:'四つ。四つ集めて、舳先から撒け。'},
+    {w:'剣士',t:'誰の声かは、わからなかった。'}
+  ],next:11}
 ];
 
 let G=null;
@@ -256,6 +266,7 @@ function enterRoom(i,keepHearts){
   G.p=freshPlayer();G.item=null;
   if(!keepHearts)G.hearts=maxHp();
   $('place').textContent=room.place;
+  if(room.salt){G.salt=Math.max(G.salt|0,room.salt);}
   if(room.kind==='talk'){G.mode='talk';showLine();startBgm();}
   else if(room.kind==='loot'){
     G.mode='play';hideTalk();
@@ -286,6 +297,11 @@ function showLine(){
   $('who').textContent=L.w||'';$('line').textContent=L.t;$('hint').textContent='次へ';
 }
 function hideTalk(){$('box').classList.add('hidden');$('choices').classList.add('hidden');G.choosing=false;}
+function goNext(){
+  const n=G.room.next;
+  if(n===undefined||n===null||n>=ROOMS.length)win();
+  else enterRoom(n,true);
+}
 function advance(){
   if(paused||!G||G.mode!=='talk'||G.choosing)return;
   G.line++;
@@ -295,7 +311,7 @@ function advance(){
       $('choices').classList.remove('hidden');
       return;
     }
-    enterRoom(G.room.next,true);
+    goNext();
   }else showLine();
 }
 function pickTea(drink){
@@ -331,7 +347,7 @@ function act(){
   if(G.mode==='play'){
     if(G.room&&G.room.kind==='loot'){
       if(G.item&&!G.item.taken)takeLoot();
-      else enterRoom(G.room.next,true);
+      else goNext();
       return;
     }
     slash();return;
@@ -397,7 +413,7 @@ function endOp(){
 }
 function startAdventure(){
   $('title').classList.add('hidden');$('hud').classList.remove('hidden');
-  G.hard=false;G.lv=1;G.exp=0;G.weapon='wakizashi';G.armor='tabi';G.toast=null;
+  G.hard=false;G.lv=1;G.exp=0;G.salt=0;G.weapon='wakizashi';G.armor='tabi';G.toast=null;
   enterRoom(0,false);
 }
 function toBoot(){
@@ -406,10 +422,10 @@ function toBoot(){
   opv.classList.add('hidden');hideTalk();
   $('hud').classList.add('hidden');$('over').classList.add('hidden');$('clear').classList.add('hidden');
   $('title').classList.remove('hidden');$('title').classList.add('pre');
-  G={mode:'boot',hearts:3,hard:false,ri:0,fx:[],lv:1,exp:0,weapon:'wakizashi',armor:'tabi'};showBest();syncPad();
+  G={mode:'boot',hearts:3,hard:false,ri:0,fx:[],lv:1,exp:0,salt:0,weapon:'wakizashi',armor:'tabi'};showBest();syncPad();
 }
 function showBest(){
-  $('best').textContent=cleared?(best?`クリア済み　ベスト残りハート ${best}`:'クリア済み'):'';
+  $('best').textContent=cleared?(`第一幕 突破　塩 ${saltBest}/4`+(best?`　ベスト残りハート ${best}`:'')):'';
 }
 function gameOver(){
   G.mode='over';hideTalk();sfx.lose();stopBgm();
@@ -420,7 +436,9 @@ function win(){
   const left=G.hearts;
   if(left>best){best=left;try{localStorage.setItem('tg.248.best',String(best));}catch(e){}}
   cleared=true;try{localStorage.setItem('tg.248.cleared','1');}catch(e){}
-  $('clearMsg').textContent=`Lv${G.lv}　${weapon().name}　残りハート ${left}`;
+  const sl=G.salt|0;
+  if(sl>saltBest){saltBest=sl;try{localStorage.setItem('tg.248.salt',String(saltBest));}catch(e){}}
+  $('clearMsg').textContent=`塩 ${sl}/4　　Lv${G.lv}　${weapon().name}　残りハート ${left}`;
   $('clear').classList.remove('hidden');$('hud').classList.add('hidden');syncPad();
 }
 
@@ -445,7 +463,7 @@ function updHud(){
   $('hearts').textContent='\u2665'.repeat(n)+'\u2661'.repeat(Math.max(0,max-n));
   $('hearts').style.visibility=G.mode==='play'?'hidden':'visible';
   if($('stat')){
-    $('stat').textContent=`Lv${G.lv||1}  ${weapon().name}\n${armor().name}`;
+    $('stat').textContent=`Lv${G.lv||1}  ${weapon().name}\n${armor().name}`+((G.salt|0)?`\n塩 ${G.salt}/4`:'');
     $('stat').style.visibility=G.mode==='play'?'hidden':'visible';
   }
 }
@@ -510,8 +528,7 @@ function update(dt){
   }
   G.en=G.en.filter(e=>e.hp>0);
   if(G.en.length===0){
-    if(G.room.next>=ROOMS.length)win();
-    else enterRoom(G.room.next,true);
+    goNext();
   }
 }
 
@@ -796,7 +813,7 @@ function loop(ts){
   requestAnimationFrame(loop);
 }
 
-G={mode:'boot',hearts:3,hard:false,ri:0,fx:[],lv:1,exp:0,weapon:'wakizashi',armor:'tabi'};
+G={mode:'boot',hearts:3,hard:false,ri:0,fx:[],lv:1,exp:0,salt:0,weapon:'wakizashi',armor:'tabi'};
 setMute(mute);showBest();syncPad();
 bindDpad($('dpad'));
 bindTap($('btnAct'),()=>{unlock();act();});
