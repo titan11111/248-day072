@@ -26,10 +26,15 @@ html, body {
   position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh;
   display: flex; flex-direction: column; touch-action: none;
 }
-#game-stage { order: 1; position: relative; flex: 0 0 75%; height: 75%; min-height: 0; }
+#game-stage { order: 1; position: relative; flex: 0 0 75%; height: 75%; min-height: 0; background: #0a060e; }
 #control-deck { order: 2; }
+/* 縦持ちのiPhoneが主戦場。横長のウィンドウで開いたときは縦持ちの比率で額装する。
+   （上段の高さは 75dvh。その 0.75 倍＝56.25dvh を横幅の上限にする）
+   iPhone縦持ちでは 100% のほうが小さいので、この上限は効かない＝実機の見え方は変わらない。 */
 #screen-wrap {
-  position: absolute; inset: 0; overflow: hidden; background: #120a18;
+  position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 56.25dvh;
+  overflow: hidden; background: #120a18;
 }
 canvas {
   position: absolute; inset: 0; display: block; width: 100%; height: 100%;

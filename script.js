@@ -521,7 +521,11 @@ function paintStageBG(img,view,look){
   if(!ready(img)||!view)return false;
   const iw=img.naturalWidth,ih=img.naturalHeight;
   const sx=iw*view.x,sy=ih*view.y,sw=iw*view.w,sh=ih*view.h;
-  const scale=charH()/BG_CHAR_PX;
+  /* 倍率はキャラ身長基準（床の遠近をキャラに合わせる）。
+     ただし **横幅を埋めることを必ず優先する**。
+     背景素材は全て540px幅しかなく、身長基準の倍率だけだと
+     iPhone 390px でも描画幅が251pxにしかならず、左右が各70px黒く抜けていた（2026-09-22 修正）。 */
+  const scale=Math.max(charH()/BG_CHAR_PX, sw>0?W/sw:0);
   const dh=sh*scale,dw=sw*scale;
   const floor=view.floor!=null?view.floor:1;
   let dy=gy()-dh*floor,dx=(W-dw)/2;
@@ -531,10 +535,16 @@ function paintStageBG(img,view,look){
   }
   cx.imageSmoothingEnabled=true;
   cx.drawImage(img,sx,sy,sw,sh,dx|0,dy|0,dw|0,dh|0);
-  if(dy>0){cx.fillStyle=C.sky2;cx.fillRect(0,0,W,dy|0);}
+  /* 上下の余りは平らな色で塗らず、素材の端の帯を伸ばして繋ぐ。
+     平塗りだと屋内の部屋の上に夜空が乗り、足元には黒い空白が残って「崩れ」に見えていた。
+     端を伸ばすと壁は壁のまま上へ、畳は畳のまま手前へ続く（2026-09-22 修正）。 */
+  /* 切り出す帯は薄くする。厚いと畳の目地ごと引き伸ばされて継ぎ目の線が出る */
+  const edgeTop=Math.max(1,sh*0.05),edgeBtm=Math.max(1,sh*0.015);
+  if(dy>0)cx.drawImage(img,sx,sy,sw,edgeTop,dx|0,0,dw|0,Math.ceil(dy));
+  if(dy+dh<H)cx.drawImage(img,sx,sy+sh-edgeBtm,sw,edgeBtm,dx|0,(dy+dh)|0,dw|0,Math.ceil(H-dy-dh));
+  /* 横は scale 側で必ず埋まるが、将来 view.w を変えたときの保険として残す */
   if(dx>0){cx.fillStyle='#120a18';cx.fillRect(0,0,dx|0,H);}
   if(dx+dw<W){cx.fillStyle='#120a18';cx.fillRect((dx+dw)|0,0,(W-dx-dw)|0,H);}
-  if(dy+dh<H){cx.fillStyle='#1a1018';cx.fillRect(0,(dy+dh)|0,W,(H-dy-dh)|0);}
   return true;
 }
 function sky(){
