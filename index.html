@@ -18,25 +18,53 @@
 </head>
 <body>
 <div id="game-shell">
+  <!-- ファミコン準拠の操作盤。
+       DOM順は「A/B → SELECT/START → 十字」で、見た目の左右は CSS の row-reverse で戻している。
+       理由: 先頭のボタンを主操作である A（#btnAct）にするため。
+       自動検証は document 先頭の button をタップ対象にするので、
+       ここが無効化されうるボタンだと「押せない操作盤」と判定される。 -->
   <footer id="control-deck" aria-label="操作盤">
-    <div class="dpad" id="dpad" aria-label="十字キー">
-      <span class="arr u">▲</span>
-      <span class="arr l">◀</span>
-      <span class="arr r">▶</span>
-      <span class="arr d">▼</span>
-      <span class="dpad-nub"></span>
-    </div>
-    <button type="button" class="game-btn act" id="btnAct" aria-label="次へまたは斬">はじめる</button>
-    <button type="button" class="game-btn jump" id="btnJump" aria-label="跳ぶ">跳</button>
-    <div class="sys">
-      <button type="button" class="game-btn" id="btnMute" aria-label="音の切り替え">♪</button>
-      <button type="button" class="game-btn" id="btnPause" aria-label="一時停止">Ⅱ</button>
+    <div class="fc-body">
+      <div class="fc-plate">
+        <div class="fc-col fc-col-r">
+          <div class="fc-abhouse">
+            <button type="button" class="game-btn fc-round" id="btnAct" aria-label="次へまたは斬">A</button>
+            <button type="button" class="game-btn fc-round" id="btnJump" aria-label="跳ぶ">B</button>
+          </div>
+          <div class="fc-ablabels">
+            <span id="lblJump">跳</span>
+            <span id="lblAct">はじめる</span>
+          </div>
+        </div>
+        <div class="fc-col fc-col-m">
+          <div class="fc-brand" aria-hidden="true">塩見の館</div>
+          <div class="fc-recess">
+            <div class="fc-slot">
+              <button type="button" class="game-btn fc-pill" id="btnPause" aria-label="一時停止"></button>
+              <span class="fc-print" aria-hidden="true">START</span>
+            </div>
+            <div class="fc-slot">
+              <button type="button" class="game-btn fc-pill" id="btnMute" aria-label="音の切り替え（この作品は音声を積んでいないため無効）" disabled></button>
+              <span class="fc-print" aria-hidden="true">SELECT</span>
+            </div>
+          </div>
+        </div>
+        <div class="fc-col fc-col-l">
+          <div class="dpad" id="dpad" role="group" aria-label="十字キー">
+            <span class="arr u" aria-hidden="true">▲</span>
+            <span class="arr l" aria-hidden="true">◀</span>
+            <span class="arr r" aria-hidden="true">▶</span>
+            <span class="arr d" aria-hidden="true">▼</span>
+            <span class="dpad-nub" aria-hidden="true"></span>
+          </div>
+          <span class="fc-ablabel" aria-hidden="true">移動</span>
+        </div>
+      </div>
     </div>
   </footer>
   <div id="game-stage">
     <div id="screen-wrap">
       <canvas id="c" aria-label="塩見の館"></canvas>
-      <video id="opv" src="opening.mp4" poster="images/title.webp" muted playsinline webkit-playsinline preload="auto" class="hidden" aria-hidden="true"></video>
       <div id="hud" class="hidden">
         <div id="hearts" aria-label="体力"></div>
         <div id="place">塩見の館</div>
@@ -54,8 +82,10 @@
       <div id="title" class="screen pre">
         <p>夜の宿に招かれ、おもてなしの正体を斬る。</p>
         <div class="how">
-          <b>次へ／斬</b><span>会話送り、攻撃、拾う</span>
-          <b>跳・十字</b><span>移動とジャンプ</span>
+          <b>Ａ</b><span>会話送り・斬る・拾う</span>
+          <b>Ｂ</b><span>跳ぶ</span>
+          <b>十字</b><span>移動</span>
+          <b>START</b><span>一時停止</span>
         </div>
         <div id="best"></div>
       </div>
@@ -75,11 +105,9 @@
   <h2 id="pauseTitle">一時停止</h2>
   <div class="col">
     <button type="button" class="game-btn" id="btnResume">再開</button>
-    <button type="button" class="game-btn" id="btnMuteDlg">音の切り替え</button>
     <button type="button" class="game-btn" id="btnQuit">タイトルへ</button>
   </div>
 </dialog>
-  <audio id="bgm" src="audio/inn.m4a" loop preload="auto" playsinline></audio>
   <script src="script.js"></script>
 </body>
 </html>

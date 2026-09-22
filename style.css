@@ -35,12 +35,6 @@ canvas {
   position: absolute; inset: 0; display: block; width: 100%; height: 100%;
   touch-action: none; z-index: 0;
 }
-#opv {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; background: transparent; z-index: 15;
-  pointer-events: none; opacity: 0; transition: opacity .28s ease;
-}
-#opv.is-on { opacity: 1; }
 #hud {
   position: absolute; left: 0; right: 0; top: max(8px, env(safe-area-inset-top));
   padding: 0 12px; display: flex; justify-content: center; align-items: center;
@@ -100,9 +94,8 @@ canvas {
 .how { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; text-align: left; margin-top: 10px; font-size: 12px; }
 .how b { color: var(--lamp); }
 #best { margin-top: 8px; font-size: 12px; opacity: .85; }
-/* boot（OP前）は導入文だけ。操作説明とベストはOP後のタイトルで見せる＝同じ画面が2回出た印象を消す */
+/* boot は導入文だけ。操作説明とベストは「はじめる」のあと（title）で見せる */
 #title.pre .how, #title.pre #best { display: none; }
-#bgm { display: none; }
 
 .game-btn {
   min-width: 48px; min-height: 48px; border: 0; border-radius: 10px;
@@ -114,50 +107,175 @@ canvas {
 .game-btn:focus-visible { outline: 3px solid var(--moon); outline-offset: 3px; }
 .game-btn:disabled { opacity: .35; pointer-events: none; }
 
+/* ===== ファミコン準拠コントローラ（2026-09-22 全面改訂） =====
+   本体＝エンジ樹脂 / 上面＝シャンパンゴールドのプレート / 黒い十字キー
+   A・Bは黒いハウジングに収まった赤い丸ボタン、SELECT・STARTは黒い窪みの赤いゴム。
+   DOM順は「A/B → START/SELECT → 十字」。先頭の button を主操作 A にするための順で、
+   見た目の左右は row-reverse で実機どおりに戻している。 */
 #control-deck {
   flex: 0 0 25%; height: 25%; min-height: 0;
-  display: flex; align-items: center; justify-content: space-between; gap: 6px;
-  padding: 8px max(8px, env(safe-area-inset-right, 8px))
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px max(6px, env(safe-area-inset-right, 6px))
           max(8px, env(safe-area-inset-bottom, 8px))
-          max(8px, env(safe-area-inset-left, 8px));
-  background:
-    linear-gradient(180deg, rgba(42,24,20,.2), rgba(10,6,10,.55)),
-    repeating-linear-gradient(90deg, #2a1c18 0 14px, #241614 14px 28px);
-  border-top: 2px solid #8a6a48;
-  box-shadow: inset 0 1px 0 #c4a070;
+          max(6px, env(safe-area-inset-left, 6px));
+  background: #0a060e;
   z-index: 8; touch-action: none; overflow: hidden;
 }
+/* 本体（エンジのプラスチック） */
+.fc-body {
+  width: 100%; height: 100%; max-width: 520px; padding: 5px;
+  border-radius: 10px; display: flex;
+  background: linear-gradient(180deg, #a92e28 0%, #8b2120 42%, #6a1616 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.28),
+    inset 0 -3px 0 rgba(0,0,0,.45),
+    0 3px 10px rgba(0,0,0,.6);
+}
+/* 上面プレート（シャンパンゴールド） */
+.fc-plate {
+  flex: 1; min-width: 0; min-height: 0;
+  border-radius: 6px; padding: 5px 7px;
+  display: flex; flex-direction: row-reverse;
+  align-items: center; justify-content: space-between; gap: 5px;
+  background: linear-gradient(180deg, #eadaae 0%, #d3b982 52%, #b99c66 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -2px 0 rgba(0,0,0,.26);
+}
+.fc-col { display: flex; align-items: center; min-width: 0; }
+.fc-col-m { flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
+.fc-col-r { flex-direction: column; align-items: center; gap: 3px; }
+.fc-col-l { flex-direction: column; align-items: center; gap: 3px; }
+/* 3列とも「操作部＋ラベル」の形にそろえて、高さの中心を合わせる */
+.fc-ablabel {
+  font-size: 10px; letter-spacing: .06em; color: #5e3f22;
+  text-shadow: 0 1px 0 rgba(255,255,255,.45); white-space: nowrap;
+}
+
+/* 十字キー（黒。2本のバーで十字を作り、影も十字形に落ちる） */
 .dpad {
-  position: relative; width: min(28vw, 112px); height: min(28vw, 112px); flex-shrink: 0;
+  position: relative; width: min(23vw, 92px); height: min(23vw, 92px); flex-shrink: 0;
   touch-action: none;
   background:
-    linear-gradient(#3a2a28, #201418) 50% 0/34% 100% no-repeat,
-    linear-gradient(#3a2a28, #201418) 0 50%/100% 34% no-repeat;
-  border-radius: 14px; box-shadow: inset 0 0 0 1px #6a4a38;
+    linear-gradient(180deg, #454545, #151515) 50% 0 / 34% 100% no-repeat,
+    linear-gradient(180deg, #454545, #151515) 0 50% / 100% 34% no-repeat;
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,.55));
 }
 .dpad .arr {
-  position: absolute; color: var(--ink); font-size: 14px; opacity: .7;
+  position: absolute; color: #cfc8bc; font-size: 12px; opacity: .78;
   pointer-events: none; transition: opacity .08s, color .08s;
 }
-.dpad .arr.u { top: 6%; left: 50%; transform: translateX(-50%); }
-.dpad .arr.d { bottom: 6%; left: 50%; transform: translateX(-50%); }
-.dpad .arr.l { left: 9%; top: 50%; transform: translateY(-50%); }
-.dpad .arr.r { right: 9%; top: 50%; transform: translateY(-50%); }
+.dpad .arr.u { top: 3%; left: 50%; transform: translateX(-50%); }
+.dpad .arr.d { bottom: 3%; left: 50%; transform: translateX(-50%); }
+.dpad .arr.l { left: 5%; top: 50%; transform: translateY(-50%); }
+.dpad .arr.r { right: 5%; top: 50%; transform: translateY(-50%); }
 .dpad.press-u .arr.u, .dpad.press-d .arr.d, .dpad.press-l .arr.l, .dpad.press-r .arr.r {
   opacity: 1; color: var(--lamp);
 }
+/* 中央の丸い窪み */
 .dpad-nub {
-  position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; border-radius: 50%;
-  background: #2a1c1c; transform: translate(-50%,-50%); pointer-events: none;
-  border: 1px solid #6a4a38;
+  position: absolute; left: 50%; top: 50%; width: 30%; height: 30%; border-radius: 50%;
+  transform: translate(-50%,-50%); pointer-events: none;
+  background: radial-gradient(circle at 50% 34%, #4e4e4e, #0e0e0e 78%);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.2), inset 0 -1px 2px rgba(0,0,0,.65);
 }
-#control-deck .act { flex: 1.2; min-height: 56px; background: var(--blood); color: var(--ink); }
-#control-deck .jump { flex: .9; min-height: 56px; background: var(--teal); color: var(--ink); }
-#control-deck .sys { display: flex; flex-direction: column; gap: 6px; }
-#control-deck .sys .game-btn { min-width: 48px; min-height: 48px; background: #3a2a38; color: var(--ink); font-size: 14px; }
 
-@media (max-height: 640px) {
-  .dpad { width: 88px; height: 88px; }
+/* プレートの刻印 */
+.fc-brand {
+  font-size: 9px; letter-spacing: .3em; color: #6b4a2a; white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255,255,255,.5);
+}
+
+/* SELECT・START（黒い窪みに収まった赤いゴム）
+   DOM順は START→SELECT。実機の並び SELECT→START へ row-reverse で戻す */
+.fc-recess {
+  display: flex; flex-direction: row-reverse; gap: 6px; align-items: flex-start;
+  padding: 3px 5px 1px; border-radius: 4px;
+  background: linear-gradient(180deg, #1b1b1b, #2e2e2e);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.75), 0 1px 0 rgba(255,255,255,.35);
+}
+.fc-slot { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+/* 見た目は実機どおりの平たいゴム、当たり判定は指に合わせて 48px を確保する。
+   背景は透明にして、赤いゴム本体は ::before で中央に描く。 */
+.fc-pill {
+  position: relative; width: max(48px, min(12.5vw, 50px)); height: 48px;
+  min-width: 0; min-height: 0;
+  border: 0; padding: 0; border-radius: 6px; background: transparent; box-shadow: none;
+}
+.fc-pill::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%;
+  height: 24px; transform: translateY(-50%); border-radius: 12px;
+  border: 1px solid #4b0f11;
+  background: linear-gradient(180deg, #d4494a 0%, #b42a2c 55%, #8c1a1c 100%);
+  box-shadow: 0 2px 0 #4d0c0e, inset 0 1px 0 rgba(255,255,255,.32);
+  transition: transform .08s ease, box-shadow .08s ease, background .08s ease;
+}
+.fc-print {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 7px; letter-spacing: .08em; color: #cfcfcf;
+}
+/* 消音中は SELECT を沈めたままにする（押せることは保ったまま状態が見える） */
+.fc-pill.is-off::before {
+  background: linear-gradient(180deg, #6d2224, #4a1315);
+  box-shadow: 0 0 0 #4d0c0e, inset 0 2px 5px rgba(0,0,0,.6);
+}
+.fc-pill:disabled + .fc-print { opacity: .45; }
+
+/* A・B（黒いハウジングの赤い丸ボタン。DOM順 A→B を row-reverse で B左・A右へ戻す） */
+.fc-abhouse {
+  display: flex; flex-direction: row-reverse; align-items: center; gap: 5px;
+  padding: 4px; border-radius: 10px;
+  background: linear-gradient(180deg, #1b1b1b, #2e2e2e);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.75), 0 1px 0 rgba(255,255,255,.35);
+}
+.fc-round {
+  width: max(48px, min(14vw, 54px)); height: max(48px, min(14vw, 54px));
+  min-width: 0; min-height: 0;
+  border-radius: 50%; padding: 0; border: 2px solid #2b1414;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 800; font-size: 16px; letter-spacing: .04em; color: #ffe6d6;
+  background: radial-gradient(circle at 50% 32%, #e4504f 0%, #c2262b 58%, #8e1519 100%);
+  box-shadow: 0 3px 0 #5d0f12, inset 0 1px 0 rgba(255,255,255,.34);
+}
+.fc-ablabels {
+  display: flex; gap: 5px; width: 100%;
+  font-size: 10px; letter-spacing: .06em; color: #5e3f22;
+  text-shadow: 0 1px 0 rgba(255,255,255,.45);
+}
+.fc-ablabels span {
+  flex: 1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#btnJump:disabled + #btnAct { opacity: 1; }
+.fc-abhouse:has(#btnJump:disabled) ~ .fc-ablabels #lblJump { opacity: .4; }
+
+/* 押した瞬間の沈み込み（.game-btn の scale より後に置いて上書きする） */
+.fc-round:active, .fc-round.is-pressed {
+  transform: translateY(2px); opacity: 1;
+  box-shadow: 0 0 0 #5d0f12, inset 0 2px 5px rgba(0,0,0,.55);
+}
+.fc-pill:active, .fc-pill.is-pressed { transform: none; opacity: 1; }
+.fc-pill:active::before, .fc-pill.is-pressed::before {
+  transform: translateY(calc(-50% + 2px));
+  box-shadow: 0 0 0 #4d0c0e, inset 0 2px 5px rgba(0,0,0,.55);
+}
+
+/* 狭い端末（iPhone SE 幅）では余白と十字を詰めて1列を保つ */
+@media (max-width: 360px) {
+  #control-deck { padding-left: max(4px, env(safe-area-inset-left, 4px));
+                  padding-right: max(4px, env(safe-area-inset-right, 4px)); }
+  .fc-body { padding: 4px; }
+  .fc-plate { padding: 4px; gap: 3px; }
+  .dpad { width: min(20vw, 92px); height: min(20vw, 92px); }
+  .fc-abhouse { gap: 4px; padding: 3px; }
+  .fc-recess { gap: 4px; padding: 3px 3px 1px; }
+  .fc-brand { display: none; }
+  .fc-print { font-size: 6px; }
+  .fc-ablabels { font-size: 9px; }
+}
+/* 背の低い端末では十字と丸ボタンを一段小さく */
+@media (max-height: 680px) {
+  .dpad { width: min(19vw, 78px); height: min(19vw, 78px); }
+  .fc-round { width: 48px; height: 48px; font-size: 15px; }
+  .fc-brand { display: none; }
+  .fc-ablabels { font-size: 9px; }
 }
 
 #pauseDlg {

@@ -1,11 +1,10 @@
 (()=>{
 const $=id=>document.getElementById(id);
-const cv=$('c'),cx=cv.getContext('2d'),stage=$('screen-wrap'),opv=$('opv');
-let W=0,H=0,DPR=1,paused=false,mute=false,AC=null,bgmOn=false,beatT=0,beat=0,chipOn=false,opGuard=0;
-// オープニング動画は1ページ読み込みにつき1回だけ。再生済みになったら二度と鳴らさない。
-let opUsed=false;
-if(opv){opv.loop=false;opv.removeAttribute('loop');}
-const bgmEl=$('bgm');
+/** 一旦オフ。復帰時は true + index.html に `<audio id="bgm" src="audio/inn.m4a" …>` */
+const USE_AUDIO=false;
+const cv=$('c'),cx=cv.getContext('2d'),stage=$('screen-wrap');
+let W=0,H=0,DPR=1,paused=false,mute=false,AC=null,bgmOn=false,beatT=0,beat=0,chipOn=false;
+const bgmEl=USE_AUDIO?$('bgm'):null;
 if(bgmEl){bgmEl.loop=true;bgmEl.preload='auto';bgmEl.volume=0.4;}
 const K={l:0,r:0,u:0,d:0};
 const titleImg=new Image();titleImg.src='images/title.webp';
@@ -54,12 +53,17 @@ function charH(){
   const play=G&&G.mode==='play';
   return Math.max(play?108:92, Math.min(H*(play?0.32:0.28), W*(play?0.50:0.42)));
 }
-const BG_CROP={
-  hall:{x:0.00,y:0.30,w:1.00,h:0.58},
-  yard:{x:0.04,y:0.34,w:0.92,h:0.58}
+/** 背景の床位置をキャラ（spr 420px 高）と同じ倍率で描く */
+const BG_CHAR_PX=420;
+const BG_VIEW={
+  desk:{x:0,y:0.36,w:1,h:0.58,floor:0.95},
+  guest:{x:0,y:0.34,w:1,h:0.58,floor:0.95},
+  hall:{x:0,y:0.30,w:1,h:0.58,floor:0.97},
+  yard:{x:0.04,y:0.34,w:0.92,h:0.58,floor:0.97}
 };
 
 function unlock(){
+  if(!USE_AUDIO)return;
   try{
     AC=AC||new(window.AudioContext||window.webkitAudioContext)();
     if(AC.state==='suspended')AC.resume();
@@ -68,7 +72,7 @@ function unlock(){
   primeBgm();
 }
 function primeBgm(){
-  if(!bgmEl)return;
+  if(!USE_AUDIO||!bgmEl)return;
   try{
     bgmEl.muted=true;
     const p=bgmEl.play();
@@ -79,10 +83,10 @@ function primeBgm(){
   }catch(e){}
 }
 function startChip(){
-  if(!AC||mute||chipOn)return;chipOn=true;bgmOn=true;beatT=0;beat=0;
+  if(!USE_AUDIO||!AC||mute||chipOn)return;chipOn=true;bgmOn=true;beatT=0;beat=0;
 }
 function startBgm(){
-  if(mute||bgmOn)return;
+  if(!USE_AUDIO||mute||bgmOn)return;
   if(bgmEl){
     bgmOn=true;chipOn=false;
     bgmEl.muted=false;bgmEl.volume=0.4;
@@ -97,7 +101,7 @@ function stopBgm(){
   if(bgmEl){try{bgmEl.pause();}catch(e){}}
 }
 function tickBgm(dt){
-  if(!chipOn||!AC||mute)return;
+  if(!USE_AUDIO||!chipOn||!AC||mute)return;
   beatT+=dt;if(beatT<0.42)return;beatT=0;beat++;
   const bass=[98,98,130.8,87.3][beat%4];
   tone(bass,bass,0.28,'triangle',0.05);
@@ -106,7 +110,7 @@ function tickBgm(dt){
   if(beat%2===0)noise(0.05,0.04,2400);
 }
 function tone(f0,f1,dur,type,vol,delay){
-  if(!AC||mute)return;
+  if(!USE_AUDIO||!AC||mute)return;
   try{
     const t=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();
     o.type=type||'square';o.frequency.setValueAtTime(f0,t);
@@ -117,7 +121,7 @@ function tone(f0,f1,dur,type,vol,delay){
   }catch(e){}
 }
 function noise(dur,vol,hz){
-  if(!AC||mute)return;
+  if(!USE_AUDIO||!AC||mute)return;
   try{
     const n=Math.floor(AC.sampleRate*dur),b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);
     for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2);
@@ -140,11 +144,13 @@ const sfx={
 };
 
 function setMute(v){
+  if(!USE_AUDIO)return;
   mute=v;
   try{localStorage.setItem('tg.248.mute',mute?'1':'0');}catch(e){}
-  $('btnMute').textContent=mute?'🔇':'♪';
-  if($('btnMuteDlg'))$('btnMuteDlg').textContent=mute?'音: オフ':'音: オン';
-  if(opv)opv.muted=mute;
+  const bm=$('btnMute');
+  if(bm){bm.classList.toggle('is-off',mute);bm.setAttribute('aria-label',mute?'音を出す':'音を消す');}
+  const bmd=$('btnMuteDlg');
+  if(bmd)bmd.textContent=mute?'音: オフ':'音: オン';
   if(bgmEl)bgmEl.muted=mute;
   if(mute)stopBgm();else if(G&&(G.mode==='talk'||G.mode==='play'||G.mode==='title'||G.mode==='loot'))startBgm();
 }
@@ -340,8 +346,7 @@ function takeLoot(){
 }
 function act(){
   if(paused)return;
-  if(!G||G.mode==='boot'){beginOp();return;}
-  if(G.mode==='op'){if(performance.now()>G.skipAt)endOp();return;}
+  if(!G||G.mode==='boot'){fromBoot();return;}
   if(G.mode==='title'){startAdventure();return;}
   if(G.mode==='talk'){advance();return;}
   if(G.mode==='play'){
@@ -375,41 +380,14 @@ function slash(){
   }
 }
 
-function beginOp(){
+function fromBoot(){
   unlock();
-  // 2周目以降は動画を出さない（繰り返し再生・音の鳴り直しを根絶する）
-  if(opUsed){G.opDone=true;startAdventure();return;}
-  G.mode='op';G.skipAt=performance.now()+400;G.opDone=false;
-  // タイトルはここで消さない。opvがz-index上で覆うので、最初のフレームが出た時点で消す（timeupdate）
   $('over').classList.add('hidden');$('clear').classList.add('hidden');
-  stopBgm();opv.classList.remove('hidden','is-on');opv.muted=true;opv.loop=false;
-  try{opv.currentTime=0;}catch(e){}
-  // iOS Safariでは、ユーザー操作中にplay()を呼ばないと再生許可が失われる。
-  // 読込完了イベントを待たず、この「はじめる」操作の中で開始する。
-  const started=opv.play();
-  if(started&&typeof started.catch==='function')started.catch(endOp);
-  opv.addEventListener('error',endOp,{once:true});
-  // Safari等で ended / error が通知されない場合も、動画尺を越えたら必ずゲームへ進む。
-  clearTimeout(opGuard);
-  opGuard=setTimeout(endOp,13000);
+  G.mode='title';
+  $('title').classList.remove('pre');
+  showBest();
+  if(!mute)startBgm();
   syncPad();
-}
-function endOp(){
-  // ended / error / play()のreject / スキップ の4経路から呼ばれるため冪等にする
-  if(!G||G.opDone)return;
-  G.opDone=true;opUsed=true;
-  clearTimeout(opGuard);opGuard=0;
-  // 止める順番が重要: 先に消音 → 停止 → srcを外す。
-  // pause()だけだと iOS Safari が裏で再生を再開して音が鳴り続けることがある。
-  try{opv.muted=true;opv.pause();}catch(e){}
-  // ゲームの最初の場面を先に敷き、動画を退かせる。二度目のタップは不要。
-  startAdventure();
-  opv.classList.remove('is-on');
-  setTimeout(()=>{
-    opv.classList.add('hidden');
-    // 動画本体を捨てる。以降どこから play() が呼ばれても音も映像も出ない。
-    try{opv.pause();opv.removeAttribute('src');opv.load();}catch(e){}
-  },300);
 }
 function startAdventure(){
   $('title').classList.add('hidden');$('hud').classList.remove('hidden');
@@ -417,9 +395,7 @@ function startAdventure(){
   enterRoom(0,false);
 }
 function toBoot(){
-  clearTimeout(opGuard);opGuard=0;
-  try{opv.pause();}catch(e){}
-  opv.classList.add('hidden');hideTalk();
+  hideTalk();
   $('hud').classList.add('hidden');$('over').classList.add('hidden');$('clear').classList.add('hidden');
   $('title').classList.remove('hidden');$('title').classList.add('pre');
   G={mode:'boot',hearts:3,hard:false,ri:0,fx:[],lv:1,exp:0,salt:0,weapon:'wakizashi',armor:'tabi'};showBest();syncPad();
@@ -443,7 +419,7 @@ function win(){
 }
 
 function setPaused(on){
-  if(!G||G.mode==='boot'||G.mode==='op'||G.mode==='title')return;
+  if(!G||G.mode==='boot'||G.mode==='title')return;
   if(G.mode==='over'||G.mode==='clear')return;
   paused=on;
   if(on){try{$('pauseDlg').showModal();}catch(e){}stopBgm();}
@@ -452,9 +428,11 @@ function setPaused(on){
 function syncPad(){
   const m=G?G.mode:'boot';
   const loot=G&&G.room&&G.room.kind==='loot';
-  $('btnAct').textContent=loot?(G.item&&!G.item.taken?(nearLoot()?'取る':'近づく'):'進む'):m==='play'?'斬':m==='talk'?'次へ':(m==='over'||m==='clear')?'再戦':m==='op'?'スキップ':m==='title'?'館へ入る':'はじめる';
+  const label=loot?(G.item&&!G.item.taken?(nearLoot()?'取る':'近づく'):'進む'):m==='play'?'斬':m==='talk'?'次へ':(m==='over'||m==='clear')?'再戦':m==='title'?'館へ入る':'はじめる';
+  $('lblAct').textContent=label;
+  $('btnAct').setAttribute('aria-label',label);
   $('btnJump').disabled=m!=='play';
-  $('hud').classList.toggle('hidden',m==='boot'||m==='op'||m==='title'||m==='clear');
+  $('hud').classList.toggle('hidden',m==='boot'||m==='title'||m==='clear');
   $('place').classList.toggle('hidden',m==='play'&&!loot);
 }
 function updHud(){
@@ -539,16 +517,24 @@ function cover(img){
   if(sr>ir){dw=W;dh=W/ir;dx=0;dy=(H-dh)/2;}else{dh=H;dw=H*ir;dy=0;dx=(W-dw)/2;}
   cx.imageSmoothingEnabled=true;cx.drawImage(img,dx|0,dy|0,dw|0,dh|0);return true;
 }
-function paintCrop(img,crop,look){
-  if(!ready(img))return false;
+function paintStageBG(img,view,look){
+  if(!ready(img)||!view)return false;
   const iw=img.naturalWidth,ih=img.naturalHeight;
-  let sx=crop?iw*crop.x:0,sy=crop?ih*crop.y:0,sw=crop?iw*crop.w:iw,sh=crop?ih*crop.h:ih;
-  const pan=Math.max(0,sw*0.06);
-  sx=Math.max(0,Math.min(iw-sw,sx+pan*(look||0)));
-  const ir=sw/sh,sr=W/H;let dw,dh,dx,dy;
-  if(sr>ir){dw=W;dh=W/ir;dx=0;dy=H-dh;}else{dh=H;dw=H*ir;dy=0;dx=(W-dw)/2;}
+  const sx=iw*view.x,sy=ih*view.y,sw=iw*view.w,sh=ih*view.h;
+  const scale=charH()/BG_CHAR_PX;
+  const dh=sh*scale,dw=sw*scale;
+  const floor=view.floor!=null?view.floor:1;
+  let dy=gy()-dh*floor,dx=(W-dw)/2;
+  if(look){
+    const pan=Math.min(Math.abs(dw-W)*0.35,dw*0.14);
+    dx=Math.max(W-dw,Math.min(0,dx+pan*(look||0)));
+  }
   cx.imageSmoothingEnabled=true;
   cx.drawImage(img,sx,sy,sw,sh,dx|0,dy|0,dw|0,dh|0);
+  if(dy>0){cx.fillStyle=C.sky2;cx.fillRect(0,0,W,dy|0);}
+  if(dx>0){cx.fillStyle='#120a18';cx.fillRect(0,0,dx|0,H);}
+  if(dx+dw<W){cx.fillStyle='#120a18';cx.fillRect((dx+dw)|0,0,(W-dx-dw)|0,H);}
+  if(dy+dh<H){cx.fillStyle='#1a1018';cx.fillRect(0,(dy+dh)|0,W,(H-dy-dh)|0);}
   return true;
 }
 function sky(){
@@ -596,9 +582,10 @@ function vignette(red){
 function drawBG(){
   const id=G.room&&G.room.id,bg=G.room&&G.room.bg;
   const img=bg==='hall'?IMG.hall:bg==='yard'?IMG.yard:id==='guest'?IMG.guest:IMG.desk;
-  const crop=BG_CROP[bg]||null;
+  const view=BG_VIEW[bg]||null;
   const look=(G.mode==='play'&&G.p)?((G.p.x/W)-0.5)*1.4:0;
-  const ok=crop?paintCrop(img,crop,look):cover(img);
+  const stagePlay=G.mode==='play';
+  const ok=stagePlay&&view?paintStageBG(img,view,look):cover(img);
   if(!ok)sky();
   if(id==='true'){
     cx.fillStyle='rgba(88,4,16,.34)';cx.fillRect(0,0,W,H);
@@ -779,7 +766,7 @@ function drawActors(){
 
 function draw(){
   cx.imageSmoothingEnabled=true;
-  if(!G||G.mode==='boot'||G.mode==='title'||G.mode==='op'){
+  if(!G||G.mode==='boot'||G.mode==='title'){
     if(!cover(IMG.title))sky();
     return;
   }
@@ -818,30 +805,28 @@ setMute(mute);showBest();syncPad();
 bindDpad($('dpad'));
 bindTap($('btnAct'),()=>{unlock();act();});
 bindHold($('btnJump'),()=>{K.u=1;},()=>{K.u=0;});
-bindTap($('btnMute'),()=>{unlock();setMute(!mute);});
+if(USE_AUDIO){
+  $('btnMute').disabled=false;
+  bindTap($('btnMute'),()=>{unlock();setMute(!mute);});
+  bindTap($('btnMuteDlg'),()=>{unlock();setMute(!mute);});
+}
 bindTap($('btnPause'),()=>setPaused(!paused));
+/* ポーズ内の2ボタンは開発当初から一度も配線されておらず、
+   キーボードの無い iPhone では開いたら閉じられない＝固まる状態だった（2026-09-22 修正） */
 bindTap($('btnResume'),()=>setPaused(false));
-bindTap($('btnMuteDlg'),()=>{unlock();setMute(!mute);});
-bindTap($('btnQuit'),()=>{setPaused(false);toBoot();});
+bindTap($('btnQuit'),()=>{paused=false;try{$('pauseDlg').close();}catch(e){}toBoot();});
+/* Escape や端末側の操作でダイアログだけ閉じたときも、ポーズ状態を残さない */
+$('pauseDlg').addEventListener('close',()=>{if(paused)paused=false;});
+$('pauseDlg').addEventListener('cancel',e=>{e.preventDefault();setPaused(false);});
 bindTap($('c0'),()=>pickTea(true));
 bindTap($('c1'),()=>pickTea(false));
-opv.addEventListener('ended',endOp);
-// 保険: 再生済みフラグが立った後に play が発火したら、その場で握り潰す。
-opv.addEventListener('play',()=>{
-  if(!opUsed)return;
-  try{opv.muted=true;opv.pause();}catch(e){}
-});
-opv.addEventListener('timeupdate',()=>{
-  if(!G||G.mode!=='op')return;
-  if(opv.currentTime>0.03){opv.classList.add('is-on');$('title').classList.add('hidden');if(!mute)opv.muted=false;}
-});
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault();try{cv.setPointerCapture(e.pointerId);}catch(err){}
   unlock();act();
 });
 window.addEventListener('keydown',e=>{
   if(e.key==='Escape'||e.key==='p'||e.key==='P'){e.preventDefault();setPaused(!paused);return;}
-  if(e.key==='m'||e.key==='M'){unlock();setMute(!mute);return;}
+  if(e.key==='m'||e.key==='M'){if(USE_AUDIO){unlock();setMute(!mute);}return;}
   if(e.key==='ArrowLeft'||e.key==='a')K.l=1;
   if(e.key==='ArrowRight'||e.key==='d')K.r=1;
   if(e.key==='ArrowUp'||e.key==='w')K.u=1;
@@ -856,7 +841,7 @@ window.addEventListener('keyup',e=>{
   if(e.key==='ArrowDown'||e.key==='s')K.d=0;
 });
 document.addEventListener('visibilitychange',()=>{
-  if(document.hidden){if(G&&(G.mode==='play'||G.mode==='talk'))setPaused(true);stopBgm();try{opv.pause();}catch(e){}}
+  if(document.hidden){if(G&&(G.mode==='play'||G.mode==='talk'))setPaused(true);stopBgm();}
 });
 requestAnimationFrame(loop);
 })();
